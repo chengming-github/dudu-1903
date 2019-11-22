@@ -8,6 +8,9 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.qfjy.project.weixin.api.accessToken.AccessTokenRedis;
+import com.qfjy.project.weixin.api.accessToken.AccessTokenThread;
+import com.qfjy.project.weixin.api.hitokoto.HitokotoUtil;
 import com.qfjy.project.weixin.api.tuling.TulingUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -35,8 +38,11 @@ import com.qfjy.project.weixin.bean.resp.TextMessage;
 public class CoreService {
 
 	@Autowired
-	private TulingUtil tulingUtil;
-
+	private TulingUtil tulingUtil; //图灵API
+	@Autowired
+	private HitokotoUtil hitokotoUtil; //一言API
+	@Autowired
+	private AccessTokenRedis accessTokenRedis; //Redis accessToken对象
 	/**
 	 * 处理微信发来的请求
 	 * 
@@ -54,6 +60,9 @@ public class CoreService {
 
 			// 发送方帐号（open_id） 下面三行代码是： 从HashMap中取出消息中的字段；
 			String fromUserName = requestMap.get("FromUserName");
+
+			System.out.println("openid:"+fromUserName);
+
 			// 公众帐号
 			String toUserName = requestMap.get("ToUserName");
 			// 消息类型
@@ -89,7 +98,9 @@ public class CoreService {
 			// 文本消息
 			if (msgType.equals(MessageUtil.REQ_MESSAGE_TYPE_TEXT)) {
 
-				respContent=tulingUtil.sendMessage(content);
+				//System.out.println("accessToken的值是："+ AccessTokenThread.access_token_val);
+				System.out.println("accessToken的值是:"+accessTokenRedis.getAccessTokenVal());
+				respContent=tulingUtil.invoke(content);
 
 			//	respContent = "您发送的是文本消息！";
 			}
@@ -128,9 +139,17 @@ public class CoreService {
 					String eventKey = requestMap.get("EventKey");
 
 					if (eventKey.equals("11")) {
-						respContent = "菜单项被点击！";
+						respContent = "会议抢单项被点击！";
 
+					}else if(eventKey.equals("31")){
+						respContent = "联系我们项被点击！";
+					}else if(eventKey.equals("34")){
+						while(true) {
+							respContent = hitokotoUtil.sendMessage();
+						}
+						//respContent = "随机一言项被点击！";
 					}
+
 					else if (eventKey.equals("70")) {
 
 						List<Article> articleList = new ArrayList<Article>();
